@@ -3,3 +3,8 @@ Explore the procedurally-generated landscape from a first-person view, featuring
 
 ## [View Demo](https://www.inriz.com/terrain/)
 ![Screenshot of WebGL2 3D terrain demo](https://www.inriz.com/terrain/inriz-terrain-demo-screenshot3.jpg)
+
+## Supported Devices
+The demo runs well (>= 120 fps) on most modern computers provided they support WebGL 2 and the `EXT_color_buffer_half_float` extension. It usually runs better on Chromium-based browsers rather than Firefox or Safari. It performs decently on most phones too but the touchscreen controls are not properly implemented yet.
+
+## How it Works
