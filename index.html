@@ -1,0 +1,318 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL2 3D Terrain Demo - Inriz</title>
+    <meta name="description"
+        content="Explore the procedurally generated terrain using WASD and your mouse. Features reflective and refractive water, an atmosphere and sun, normal mapping, and much more to come. Written in JavaScript and uses the WebGL 2 API.">
+    <script src="./mat4.js"></script>
+    <style>
+        * {}
+
+        @font-face {
+            font-family: 'font';
+            font-weight: normal;
+            src: url('./font/Poppins-Regular.ttf');
+        }
+
+        @font-face {
+            font-family: 'font';
+            font-weight: bold;
+            src: url('./font/Poppins-Bold.ttf');
+        }
+
+        html,
+        body {
+            margin: 0px;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'font', sans-serif;
+            background: #000;
+        }
+
+        #stats {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            color: #fff;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 8px;
+            margin: 10px;
+        }
+
+        #status {
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            color: #fff;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 8px;
+            margin: 10px;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            touch-action: manipulation;
+            object-fit: contain;
+        }
+
+        .commandpanel {
+            position: fixed;
+            bottom: 5px;
+            left: 5px;
+        }
+
+        .commandpanel input {
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border: none;
+            outline: none;
+            font-family: monospace;
+            width: 300px;
+            border-radius: 8px;
+        }
+
+        .commandpanel input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        #commandoutput {
+            border-radius: 8px;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            width: 300px;
+            box-sizing: border-box;
+            max-height: 300px;
+            min-height: 200px;
+            margin-bottom: 5px;
+            font-family: monospace;
+            opacity: 0;
+            transition-duration: 0.3s;
+            white-space: pre-wrap;
+            overflow-y: hidden;
+            /* overflow-y: auto; */
+        }
+
+        .scrollpanel {
+
+            padding: 24px;
+            background: rgba(0, 0, 0, 0.9);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            overflow-y: auto;
+            color: #fff;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
+        .scrollpanelexit {
+            cursor: pointer;
+            border-radius: 8px;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.2);
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #fff;
+            font-weight: bold;
+            transition-duration: 0.2s;
+        }
+
+        .scrollpanelexit:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        #startmenu {
+            /* text-align: center; */
+            position: absolute;
+            top: 50%;
+            left: calc(50px + 5%);
+            transform: translate(0, -50%);
+            z-index: 500;
+            /* padding: 35px; */
+            border-radius: 20px;
+            /* width: 76%; */
+            box-sizing: border-box;
+            /* max-width: 356px; */
+        }
+
+        #startpanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #000;
+            width: 100%;
+            height: 100vh;
+        }
+
+        #startmenu .title {
+            font-weight: bold;
+            font-size: 57px;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        #startmenu .description {
+            font-size: 16px;
+            color: #fff;
+            margin-bottom: 54px;
+            max-width: 50%;
+        }
+
+        .resolutionoption {
+            color: #fff;
+            padding: 18px 17px;
+            width: 324px;
+            cursor: pointer;
+            text-align: left;
+            border-radius: 17px;
+            background: #ffffff12;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            margin-bottom: 16px;
+            font-weight: bold;
+        }
+
+        .resolutionoption.primary {
+            background: rgb(112 179 255);
+        }
+
+        .imgfull {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 400;
+        }
+
+        .optit {
+            display: inline-block;
+        }
+
+        .opts {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            padding: 10px;
+        }
+
+        .optlabel {
+            background: rgba(0, 0, 0, 0.4);
+            color: #fff;
+            border-radius: 5px;
+            padding: 6px 10px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        .optbtn {
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            border-radius: 5px;
+            padding: 8px 10px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
+        .optbtn.active {
+            background: rgba(48, 144, 255, 0.6);
+        }
+
+        .optbtn:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .optbtn.active:hover {
+            background: rgba(48, 144, 255, 0.8);
+        }
+
+        #uicont {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .logo {
+            color: #fff;
+            padding: 16px 20px;
+            text-align: left;
+            border-radius: 17px;
+            background: #ffffff38;
+            backdrop-filter: blur(5px);
+            margin-bottom: 18px;
+            text-decoration: none;
+            width: 80px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="uicont">
+        <div id="stats"></div>
+        <div id="status" style="display: none;"></div>
+        <div id="counter" style="display: none;">-</div>
+        <div class="commandpanel">
+            <div id="commandoutput"></div>
+            <input type="text" id="commandinput" placeholder="Type a command (/)...">
+        </div>
+        <div class="opts">
+            <div id="optsel" class="optit" style="display: none;">
+                <div class="optlabel">Render Distance</div>
+                <div class="optbtn" id="renderhigh">High</div>
+                <div class="optbtn" id="rendermed">Medium</div>
+                <div class="optbtn" id="renderlow">Low</div>
+            </div>
+            <div id="optsel-tonemapping" class="optit" style="display: none">
+                <div class="optlabel">Visual Style: </div>
+                <div class="optbtn" id="tmA">A</div>
+                <div class="optbtn" id="tmB">B</div>
+                <div class="optbtn" id="tmC">C</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="startpanel">
+        <div id="startmenu">
+            <a href="https://www.inriz.com" target="_blank" style="all: unset;">
+                <img src="./inrizlogowhite.svg" alt="Inriz Logo - White" class="logo">
+            </a>
+            <div class="title">WebGL2 3D Terrain Demo</div>
+            <div class="description">
+                Explore the procedurally generated terrain using WASD and your mouse. Features reflective and refractive
+                water, an atmosphere and sun, normal mapping, foliage and more to come. Written in JavaScript and uses
+                the WebGL 2 API. Optimized for performance.
+            </div>
+            <div id="startoptions"></div>
+        </div>
+        <img class="imgfull" src="./inriz-terrain-demo-screenshot3.jpg"
+            alt="Screenshot of the Inriz WebGL2 3D Terrain Demo">
+    </div>
+    <script src="main.js"></script>
+</body>
+
+</html>
